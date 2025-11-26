@@ -83,7 +83,10 @@ def test_error_case(name: str, filename: str, query: str) -> bool:
 
 def main():
     """Run all tests"""
-    subprocess.run(["make", "tree_print"])
+    res = subprocess.run(["make", "tree_print"])
+    if res.returncode != 0:
+      sys.stderr.write("failed to build tree_print!!!\n")
+      return res.returncode
     print("=" * 60)
     print("tree_print Test Suite")
     print("=" * 60)
