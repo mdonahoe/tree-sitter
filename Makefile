@@ -136,4 +136,7 @@ format:
 changelog:
 	@git-cliff --config .github/cliff.toml --prepend CHANGELOG.md --latest --github-token $(shell gh auth token)
 
+tree_print: libtree-sitter.a
+	gcc -o tree_print tree_print.c test/fixtures/grammars/c/src/parser.c -I lib/include -L . -l:libtree-sitter.a
+
 .PHONY: test test-wasm lint format changelog
