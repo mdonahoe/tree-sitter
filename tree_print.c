@@ -6,6 +6,7 @@
 
 // Declare the C language parser
 TSLanguage *tree_sitter_c(void);
+TSLanguage *tree_sitter_python(void);
 
 // Read file contents into a string
 char* read_file(const char* filename) {
@@ -226,6 +227,22 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    // Determine language based on file extension
+    TSLanguage* language = NULL;
+    const char* ext = strrchr(filename, '.');
+    if (ext) {
+        if (strcmp(ext, ".c") == 0 || strcmp(ext, ".h") == 0) {
+            language = tree_sitter_c();
+        } else if (strcmp(ext, ".py") == 0) {
+            language = tree_sitter_python();
+        }
+    }
+    
+    // Default to C if no extension or unknown extension
+    if (!language) {
+        language = tree_sitter_c();
+    }
+
     // Create parser
     TSParser* parser = ts_parser_new();
     if (!parser) {
@@ -234,8 +251,8 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    // Set language to C
-    if (!ts_parser_set_language(parser, tree_sitter_c())) {
+    // Set language
+    if (!ts_parser_set_language(parser, language)) {
         fprintf(stderr, "Error: Failed to set language\n");
         ts_parser_delete(parser);
         free(source_code);
@@ -265,7 +282,7 @@ int main(int argc, char** argv) {
         uint32_t error_offset;
         TSQueryError error_type;
         TSQuery* query = ts_query_new(
-            tree_sitter_c(),
+            language,
             query_string,
             strlen(query_string),
             &error_offset,

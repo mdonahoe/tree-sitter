@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Test suite for tree_print tool.
-Tests various query patterns against example.c and validates output.
+Tests various query patterns against example.c and example.py and validates output.
+Supports both C and Python syntax parsing.
 """
 
 import subprocess
@@ -224,6 +225,141 @@ class TestTreePrint(unittest.TestCase):
     def test_nonexistent_file(self):
         """Test non-existent file"""
         self.assert_output_fails("(string_literal) @str", "nonexistent.c")
+
+    # Python-specific tests
+    def test_python_function_definitions(self):
+        """Test finding Python function definitions"""
+        self.assert_output_contains(
+            "(function_definition) @func",
+            [
+                "def hello()"
+            ],
+            filename="example.py"
+        )
+
+    def test_python_strings(self):
+        """Test finding Python string literals"""
+        self.assert_output_contains(
+            "(string) @str",
+            [
+                '"Hello, world!"',
+                '"__main__"'
+            ],
+            filename="example.py"
+        )
+
+    def test_python_function_calls(self):
+        """Test finding Python function calls"""
+        self.assert_output_contains(
+            "(call) @call",
+            [
+                "print(",
+                "hello()"
+            ],
+            filename="example.py"
+        )
+
+    def test_python_if_statements(self):
+        """Test finding Python if statements"""
+        self.assert_output_contains(
+            "(if_statement) @if",
+            [
+                "if __name__"
+            ],
+            filename="example.py"
+        )
+
+    def test_python_return_statements(self):
+        """Test finding Python return statements"""
+        self.assert_output_contains(
+            "(return_statement) @ret",
+            [
+                "return 42"
+            ],
+            filename="example.py"
+        )
+
+    def test_python_identifiers(self):
+        """Test finding Python identifiers"""
+        self.assert_output_contains(
+            '(identifier) @id (#eq? @id "hello")',
+            [
+                "hello"
+            ],
+            filename="example.py"
+        )
+
+    def test_python_integer_literals(self):
+        """Test finding Python integer literals"""
+        self.assert_output_contains(
+            "(integer) @int",
+            [
+                "42"
+            ],
+            filename="example.py"
+        )
+
+    def test_python_comparison_operators(self):
+        """Test finding Python comparison operators"""
+        self.assert_output_contains(
+            "(comparison_operator) @op",
+            [
+                "=="
+            ],
+            filename="example.py"
+        )
+
+    def test_python_expression_statement(self):
+        """Test finding Python expression statements"""
+        self.assert_output_contains(
+            "(expression_statement) @expr",
+            [
+                "hello()"
+            ],
+            filename="example.py"
+        )
+
+    def test_python_parameters(self):
+        """Test finding Python function parameters"""
+        # hello() has no parameters, but the function definition should still be found
+        stdout, stderr, returncode = self.run_tree_print("example.py", "(parameters) @params")
+        self.assertEqual(returncode, 0)
+
+    def test_python_assignment(self):
+        """Test finding Python assignment statements"""
+        # example.py doesn't have assignments, but test that query works
+        stdout, stderr, returncode = self.run_tree_print("example.py", "(assignment) @assign")
+        self.assertEqual(returncode, 0)
+
+    def test_language_detection_c(self):
+        """Test that C files are detected and parsed correctly"""
+        stdout, stderr, returncode = self.run_tree_print("example.c", "(function_definition) @func")
+        self.assertEqual(returncode, 0)
+        self.assertIn("int main()", stdout)
+
+    def test_language_detection_python(self):
+        """Test that Python files are detected and parsed correctly"""
+        stdout, stderr, returncode = self.run_tree_print("example.py", "(function_definition) @func")
+        self.assertEqual(returncode, 0)
+        self.assertIn("def hello()", stdout)
+
+    def test_python_nested_query(self):
+        """Test complex nested query for Python"""
+        self.assert_output_contains(
+            "(if_statement condition: (comparison_operator) @op)",
+            [
+                "=="
+            ],
+            filename="example.py",
+            should_contain_all=False
+        )
+
+    def test_python_module(self):
+        """Test finding Python module structure"""
+        stdout, stderr, returncode = self.run_tree_print("example.py", "(module) @mod")
+        self.assertEqual(returncode, 0)
+        # Module should always exist for a valid Python file
+        self.assertTrue(len(stdout) > 0 or "No matches found" in stderr)
 
 
 if __name__ == "__main__":
