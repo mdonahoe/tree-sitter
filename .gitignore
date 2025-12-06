@@ -13,6 +13,8 @@ fuzz-results
 test/fuzz/out
 test/fixtures/grammars/*
 !test/fixtures/grammars/.gitkeep
+# Allow top-level grammars directory to be tracked
+!grammars/
 
 node_modules
 
